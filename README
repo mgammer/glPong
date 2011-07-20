@@ -1,0 +1,8 @@
+A OpenGL clone of the popular Pong game.
+Created with Qt4 and OpenGL.
+
+Build Instructions (Unix/Shell):
+- cd /into/project/directory/
+- qmake
+- make
+- ./glPong
