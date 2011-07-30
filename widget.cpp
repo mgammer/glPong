@@ -12,14 +12,21 @@ Widget::Widget(QWidget *parent) :
     glWidget->setGeometry(0, 35, 400, 200);
 
     connect(this, SIGNAL(gameStart(bool)), glWidget, SLOT(startGame(bool)));
+    connect(this, SIGNAL(sliderValue(int)), glWidget, SLOT(ballSpeed(int)));
+    connect(this, SIGNAL(checkBoxValue(bool)), glWidget, SLOT(ballMoveThroughWalls(bool)));
+
     connect(glWidget, SIGNAL(goal(int)), this, SLOT(increaseLCD(int)));
     connect(glWidget, SIGNAL(resetLCD()), this, SLOT(resetLCD()));
     connect(glWidget, SIGNAL(toggleFullscreen()), this, SLOT(toggleFullscreen()));
-
-    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(buttonPressed()));
     connect(glWidget, SIGNAL(toggleGame()), this, SLOT(buttonPressed()));
 
-    glWidget->setFocus();
+    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(buttonPressed()));
+
+    connect(ui->horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
+    connect(ui->checkBox, SIGNAL(clicked(bool)), this, SLOT(checkBoxValueChanged(bool)));
+
+
+    glWidget->setFocus();       // set focus to glWidget otherwise we dont get keyEvents on glWidget
 
 }
 
@@ -34,9 +41,14 @@ void Widget::resizeEvent(QResizeEvent *e)
 {
     ui->lcdNumber->setGeometry(20, 10, 64, 23);
     ui->lcdNumber_2->setGeometry(e->size().width() - 20 - 64, 10, 64, 23);
-    ui->pushButton->setGeometry(e->size().width()/2 - 42, e->size().height() - 30, 84, 26);
 
     glWidget->setGeometry(0, 35, e->size().width(), e->size().width()/2);
+
+    ui->pushButton->setGeometry(20/*e->size().width()/2 - 42*/, e->size().height() - 30, 84, 26);
+
+    ui->checkBox->setGeometry(130, e->size().height()-45, 180, 21);
+    ui->horizontalSlider->setGeometry(130, e->size().height() - 25, 250, 20);
+
 }
 
 void Widget::buttonPressed()
@@ -72,4 +84,18 @@ void Widget::toggleFullscreen()
         this->showNormal();
     else
         this->showFullScreen();
+}
+
+void Widget::sliderValueChanged(int value)
+{
+    emit sliderValue(value);
+
+    glWidget->setFocus();       // set focus to glWidget otherwise we dont get keyEvents on glWidget
+}
+
+void Widget::checkBoxValueChanged(bool state)
+{
+    emit checkBoxValue(state);
+
+    glWidget->setFocus();       // set focus to glWidget otherwise we dont get keyEvents on glWidget
 }

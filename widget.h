@@ -19,16 +19,18 @@ public:
 
 signals:
     void gameStart(bool state);
+    void sliderValue(int value);
+    void checkBoxValue(bool state);
 
 public slots:
-    void increaseLCD(int player);
-    void buttonPressed();
 
 private slots:
     void resetLCD();
+    void increaseLCD(int player);
+    void buttonPressed();
     void toggleFullscreen();
-
-
+    void sliderValueChanged(int value);
+    void checkBoxValueChanged(bool state);
 
 protected:
     void resizeEvent(QResizeEvent *e);

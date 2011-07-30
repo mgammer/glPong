@@ -5,8 +5,10 @@
 #include <QTimer>
 #include <QKeyEvent>
 #include <QApplication>
-#include <math.h>
 #include <QDebug>
+
+#include "paddle.h"
+#include "pongBall.h"
 
 class glCoreWidget : public QGLWidget
 {
@@ -25,6 +27,8 @@ signals:
 public slots:
     void startGame(bool state);
     void resetGame();
+    void ballSpeed(int speed);
+    void ballMoveThroughWalls(bool state);
 
 private slots:
     void newFrame();
@@ -38,20 +42,16 @@ protected:
 
 
 private:
-    QTimer *timer;
+    QTimer *timer;          // timer that repaints the glWidget on timeout. Used to generate Frames or Frames per Seconds (FPS)
 
-    GLfloat p1pos[3];       // player 1 position - lower left point
-    GLfloat p2pos[3];       // player 2 position - lower left point
+    paddle *player1;        // player 1 paddle
+    paddle *player2;        // player 2 paddle
 
-    GLfloat ball[3];        // ball position - middle
-//    GLfloat balltmp[2];   // only needed for line drawn circle ... but ball is drawn as a sphere
+    pongBall *ball;         // pong ball
+
     bool ballMoving;        // ball needs to be "shot" from a player in order to move at the beginning of a game and after each goal
-    int ballMotionPolar[2];   // ballMothionPolarVector [0] = BALLSPEED, [1] = angle
-    int ballXMoveDirection; // ball move left (-1) or right (+1)
-    int ballYMoveDirection; // ball move down (-1) or up (+1)
 
-    int calculateBallMovement();
-    void resetBallMotion();
+    void collusionDetection();  // calls and handles all colusion functions and events
 };
 
 #endif // GLCOREWIDGET_H

@@ -5,7 +5,7 @@
 #define FIELDHEIGHT 100                 // Fieldheight: whole field is from -fieldheight to +fieldheight (origin is in the middle of the glwidget)
 #define PLAYERLENGTH FIELDHEIGHT/2      // Length of each player bar
 #define PLAYERWIDTH PLAYERLENGTH/10     // Thickness of each player
-#define PLAYERSTEP PLAYERLENGTH/5                   // Stepwidth for each player
+#define PLAYERSTEP PLAYERLENGTH/5       // Stepwidth for each player
 #define BALLRADIUS 2                    // Radius of the sphere/ball
 #define BALLSPEED 5                     // ballspeed per frame => ~30FPS *BALLSPEED = MOVEMENT PER SECOND
 
@@ -13,6 +13,14 @@
 glCoreWidget::glCoreWidget(QWidget *parent) :
     QGLWidget(parent)
 {
+    player1 = new paddle(-FIELDLENGTH+PLAYERWIDTH*2, 0, 0, PLAYERWIDTH, PLAYERLENGTH, PLAYERSTEP);
+    player1->setColor(0.0, 0.5, 1.0);
+    player2 = new paddle(FIELDLENGTH-(PLAYERWIDTH*3), 0, 0, PLAYERWIDTH, PLAYERLENGTH, PLAYERSTEP);
+    player2->setColor(0.5, 0.0, 1.0);
+
+    ball = new pongBall(player1->getX()+player1->getWidth()+BALLRADIUS*2, 0.0f+PLAYERLENGTH/2, -BALLRADIUS, BALLSPEED, 180);
+    ball->setColor(0.0, 1.0, 0.0);
+
     resetGame();
 
     timer = new QTimer(this);
@@ -21,6 +29,12 @@ glCoreWidget::glCoreWidget(QWidget *parent) :
 
 glCoreWidget::~glCoreWidget()
 {
+    if(player1)
+        delete player1;
+    if(player2)
+        delete player2;
+    if(ball)
+        delete ball;
     if(timer)
         delete timer;
 }
@@ -30,8 +44,6 @@ void glCoreWidget::initializeGL()
     // opengl version number
     qDebug() << "OpenGL Information:" << (char*)glGetString(GL_VERSION)
              << (char*)glGetString(GL_VENDOR) << (char*)glGetString(GL_RENDERER);
-
-    qDebug() << FIELDLENGTH << FIELDHEIGHT << PLAYERLENGTH << PLAYERWIDTH << PLAYERSTEP;
 
     // loaded once before paintGL is called
     glEnable(GL_DEPTH_TEST);
@@ -52,69 +64,22 @@ void glCoreWidget::paintGL()
     glLoadIdentity();                                                                   // Reset The View
 
     // draw player 1 left
-    glBegin(GL_QUADS);
-    glColor3f(0.0f, 0.5f, 1.0f);
-    glVertex3f(p1pos[0],             p1pos[1],              p1pos[2]);
-    glVertex3f(p1pos[0]+PLAYERWIDTH, p1pos[1],              p1pos[2]);
-    glVertex3f(p1pos[0]+PLAYERWIDTH, p1pos[1]+PLAYERLENGTH, p1pos[2]);
-    glVertex3f(p1pos[0],             p1pos[1]+PLAYERLENGTH, p1pos[2]);
-    glEnd();
+    player1->draw();
 
     // draw player 2 right
-    glBegin(GL_QUADS);
-    glColor3f(0.5f, 0.0f, 1.0f);
-    glVertex3f(p2pos[0],             p2pos[1],              p2pos[2]);
-    glVertex3f(p2pos[0]+PLAYERWIDTH, p2pos[1],              p2pos[2]);
-    glVertex3f(p2pos[0]+PLAYERWIDTH, p2pos[1]+PLAYERLENGTH, p2pos[2]);
-    glVertex3f(p2pos[0],             p2pos[1]+PLAYERLENGTH, p2pos[2]);
-    glEnd();
+    player2->draw();
 
     // draw ball
-    glTranslatef( ball[0], ball[1], ball[2]-BALLRADIUS );       // translate to the ball origin
-    glColor3f(0.0f, 1.0f, 0.0f);                                // apply the ball color
-    gluSphere(gluNewQuadric(), BALLRADIUS, 32, 16);              // draw the ball
-    glLoadIdentity();                                           // redo translation
-
-    // a circle with lines drawn - only lines are colored
-//    glBegin(GL_LINES);
-//    for (int i = 0; i < 180; i++)
-//    {
-//        balltmp[0] = BALLRADIUS * cos(i) - ball[0];
-//        balltmp[1] = BALLRADIUS * sin(i) + ball[1];
-//        glVertex3f(balltmp[0] + ball[1],balltmp[1] - ball[0],0);
-
-//        balltmp[0] = BALLRADIUS * cos(i + 0.1) - ball[0];
-//        balltmp[1] = BALLRADIUS * sin(i + 0.1) + ball[1];
-//        glVertex3f(balltmp[0] + ball[1],balltmp[1] - ball[0],0);
-//    }
-//    glEnd();
-
-    // a sphere with lines drawn, so a circle :)
-//    glColor3f(0.0f, 1.0f, 0.0f);
-//    glBegin(GL_LINE_LOOP);
-//    const float PI = 3.1415926535897932;
-//    for (float i = 0.0; i < 2.0*PI; i += 2.0*PI/30.0){
-//        float x = BALLRADIUS * cos(i) + ball[0];
-//        float y = BALLRADIUS * sin(i) + ball[1];
-//        glVertex3f(x,y,0);
-//    }
-//    glEnd();
-
-
-
+    ball->draw();
 }
 
 void glCoreWidget::resizeGL(int w, int h)
 {
-//    glViewport(0, 0, w, h);
-//    glMatrixMode(GL_PROJECTION);
-//    glFrustum((w/2)*-1, w/2, (h/2)*-1, h/2, 4.0, 15.0);
-
     glViewport(0, 0, w, h);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-FIELDLENGTH, FIELDLENGTH, -FIELDHEIGHT, FIELDHEIGHT, 0, 10);       // set the game-coordinate system to x= -100 ... 100, y= -100 ... 100, z= 0 ... 10
+    glOrtho(-FIELDLENGTH, FIELDLENGTH, -FIELDHEIGHT, FIELDHEIGHT, -10, 10);       // set the game-coordinate system to x= -100 ... 100, y= -100 ... 100, z= 0 ... 10
 
     glMatrixMode(GL_MODELVIEW);
 }
@@ -131,22 +96,50 @@ void glCoreWidget::startGame(bool state)
 
 void glCoreWidget::newFrame() /* function is only called, when game is running (not in pause mode)  */
 {
+    if(ballMoving)
+        ball->move();
+
+    collusionDetection();
     updateGL();                 // update GLWidget painting
-    calculateBallMovement();    // check for collusion detection and calc new ball position
+}
+
+void glCoreWidget::collusionDetection()
+{
+    /*
+     * Some Steps to do:
+     * 1. Check for wall collusion
+     * 2. Check for player collusion
+     * 3. Check for a goal
+     */
+    ball->collusionWall(FIELDHEIGHT);
+
+    ball->collusionPaddle(player1->getX(), player1->getY(), player1->getWidth(), player1->getHeight());
+    ball->collusionPaddle(player2->getX(), player2->getY(), player2->getWidth(), player2->getHeight());
+
+    int goalForPlayer = ball->goal(FIELDLENGTH);
+    if( goalForPlayer == 1) {
+        emit goal(1);
+        ball->setPosition(player2->getX()-BALLRADIUS*2, 0.0f+player2->getHeight()/2, -BALLRADIUS);
+        ballMoving = false;
+        ball->setAngle(0);
+    }
+    else if( goalForPlayer == 2) {
+        emit goal(2);
+        ball->setPosition(player1->getX()+player1->getWidth()+BALLRADIUS*2, 0.0f+player1->getHeight()/2, -BALLRADIUS);
+        ballMoving = false;
+        ball->setAngle(180);
+    }
+
 }
 
 void glCoreWidget::keyPressEvent(QKeyEvent *e)
 {
     switch(e->key()) {
     case Qt::Key_Up:
-        // move player 2 up
-        if(p2pos[1] < FIELDHEIGHT-PLAYERLENGTH)
-            p2pos[1] += PLAYERSTEP;
+        player2->moveUp();
         break;
     case Qt::Key_Down:
-        // move player 2 down
-        if(p2pos[1] > -FIELDHEIGHT)
-            p2pos[1] -= PLAYERSTEP;
+        player2->moveDown();
         break;
     case Qt::Key_Space:
         emit toggleGame();
@@ -158,14 +151,10 @@ void glCoreWidget::keyPressEvent(QKeyEvent *e)
         ballMoving = true;
         break;
     case Qt::Key_A:
-        // move player 1 up
-        if(p1pos[1] < FIELDHEIGHT-PLAYERLENGTH)
-            p1pos[1] += PLAYERSTEP;
+        player1->moveUp();
         break;
     case Qt::Key_Y:
-        // move player 1 down
-        if(p1pos[1] > -FIELDHEIGHT)
-            p1pos[1] -= PLAYERSTEP;
+        player1->moveDown();
         break;
     case Qt::Key_R:
         resetGame();
@@ -189,137 +178,22 @@ void glCoreWidget::keyPressEvent(QKeyEvent *e)
 void glCoreWidget::resetGame()
 {
     resetLCD();
-    // TODO: reset ball and player position
-    p1pos[0] = -FIELDLENGTH+PLAYERWIDTH*2;  // x-coordinate never changes
-    p1pos[1] = 0.0f;    // y-coordinate
-    p1pos[2] = 0.0f;    // z-coordinate never changes
 
-    p2pos[0] = FIELDLENGTH-(PLAYERWIDTH*3);   // x-coordinate never changes
-    p2pos[1] = 0.0f;    // y-coordinate
-    p2pos[2] = 0.0f;    // z-coordinate never changes
+    player1->setPosition(-FIELDLENGTH+PLAYERWIDTH*2, 0.0f , 0.0f);
+    player2->setPosition(FIELDLENGTH-(PLAYERWIDTH*3), 0.0f, 0.0f);
 
-    ball[0] = p1pos[0]+PLAYERWIDTH+BALLRADIUS;     // x-coordinate in front of player 1
-    ball[1] = 0.0f + PLAYERLENGTH/2;        // y-coordinate in the middle of player 1
-    ball[2] = 0.0f;                         // z-coordinate never changes - we are in a 2D environment :)
+    ball->setPosition(player1->getX()+player1->getWidth()+BALLRADIUS*2, 0.0f+player1->getHeight()/2, -BALLRADIUS);
+    ball->setAngle(180);
+
     ballMoving = false;
-    ballXMoveDirection = -1;
-    ballYMoveDirection = 1;
-    resetBallMotion();
 }
 
-int glCoreWidget::calculateBallMovement()
+void glCoreWidget::ballSpeed(int speed)
 {
-    /*
-     * Collusion detection against the field boundaries
-     */
-    if(ball[0]+BALLRADIUS >= FIELDLENGTH || ball[0]-BALLRADIUS <= -FIELDLENGTH) {
-        // goal
-        qDebug() << "goal";
-        if(ball[0]+BALLRADIUS >= FIELDLENGTH) {
-            emit goal(1);
-            // reset ball position in front of player
-            ball[0] = p2pos[0] - BALLRADIUS;
-            ball[1] = 0.0f + PLAYERLENGTH/2;
-            ball[2] = 0.0f;
-            ballMoving = false;
-            resetBallMotion();
-        }
-        else {
-            emit goal(2);
-            // reset ball position in front of player
-            ball[0] = p1pos[0] + PLAYERWIDTH + BALLRADIUS;
-            ball[1] = 0.0f + PLAYERLENGTH/2;
-            ball[2] = 0.0f;
-            ballMoving = false;
-            resetBallMotion();
-        }
-
-    }
-    if(ball[1]+BALLRADIUS >= FIELDHEIGHT || ball[1]-BALLRADIUS <= -FIELDHEIGHT) {
-        // collusion against a boundarie => change ball y-component
-        //ballYMoveDirection *= -1;
-        ballMotionPolar[1] *= -1;
-    }
-
-    if(!ballMoving) // ball not moving, nothing needs to be calculated
-        return 0;
-
-    /*
-     * Collusion detection against player paddles
-     */
-    if(ball[0]-BALLRADIUS >= p1pos[0] && ball[0]-BALLRADIUS <= p1pos[0]+PLAYERWIDTH) {  // x-coordinate match
-        if((ball[1]-BALLRADIUS <= p1pos[1]+PLAYERLENGTH && ball[1]-BALLRADIUS >= p1pos[1]) || (ball[1]+BALLRADIUS <= p2pos[1]+PLAYERLENGTH && ball[1]+BALLRADIUS >= p2pos[1])) {
-            // collusion with player 1 - detect where to apply a usefull angle
-            ballXMoveDirection *= -1;
-            // from player top to bottum
-            if(ball[1] <= p1pos[1]+PLAYERLENGTH && ball[1] >= p1pos[1]+(PLAYERLENGTH/5)*4) {
-//                if(ballMotionPolar[1] >= 0)
-                    ballMotionPolar[1] = 60 - (ballMotionPolar[1] - 60);
-            }
-            if(ball[1] <= p1pos[1]+(PLAYERLENGTH/5)*4 && ball[1] >= p1pos[1]+(PLAYERLENGTH/5)*3) {
-                ballMotionPolar[1] = 30 - (ballMotionPolar[1] - 30);
-            }
-            if(ball[1] <= p1pos[1]+(PLAYERLENGTH/5)*3 && ball[1] >= p1pos[1]+(PLAYERLENGTH/5)*2) {
-                ballMotionPolar[1] += 0;
-            }
-            if(ball[1] <= p1pos[1]+(PLAYERLENGTH/5)*2 && ball[1] >= p1pos[1]+(PLAYERLENGTH/5)*1) {
-                ballMotionPolar[1] = -30 - (ballMotionPolar[1] + 30);
-            }
-            if(ball[1] <= p1pos[1]+(PLAYERLENGTH/5)*1 && ball[1] >= p1pos[1]+(PLAYERLENGTH/5)*0) {
-                ballMotionPolar[1] = -60 - (ballMotionPolar[1] + 60);
-            }
-            qDebug() << "@player1:" << ballMotionPolar[1];
-        }
-    }
-    if(ball[0]+BALLRADIUS >= p2pos[0] && ball[0]+BALLRADIUS <= p2pos[0]+PLAYERWIDTH) {  // x-coordinate match
-        if((ball[1]-BALLRADIUS <= p2pos[1]+PLAYERLENGTH && ball[1]-BALLRADIUS >= p2pos[1]) || (ball[1]+BALLRADIUS <= p2pos[1]+PLAYERLENGTH && ball[1]+BALLRADIUS >= p2pos[1])) {
-            // collusion
-            ballXMoveDirection *= -1;
-            // from player top to bottum
-            if(ball[1] <= p2pos[1]+PLAYERLENGTH && ball[1] >= p2pos[1]+(PLAYERLENGTH/5)*4) {
-//                ballMotionPolar[1] += 60;
-                qDebug() << "player2 top";
-                ballMotionPolar[1] += -60;
-            }
-            if(ball[1] <= p2pos[1]+(PLAYERLENGTH/5)*4 && ball[1] >= p2pos[1]+(PLAYERLENGTH/5)*3) {
-//                ballMotionPolar[1] += 30;
-                qDebug() << "player2 middle-top";
-                ballMotionPolar[1] += -30;
-            }
-            if(ball[1] <= p2pos[1]+(PLAYERLENGTH/5)*3 && ball[1] >= p2pos[1]+(PLAYERLENGTH/5)*2) {
-//                ballMotionPolar[1] += 0;
-                qDebug() << "player2 middle";
-                ballMotionPolar[1] += 0;
-            }
-            if(ball[1] <= p2pos[1]+(PLAYERLENGTH/5)*2 && ball[1] >= p2pos[1]+(PLAYERLENGTH/5)*1) {
-//                ballMotionPolar[1] += -30;
-                qDebug() << "player2 middle-buttom";
-                ballMotionPolar[1] += 30;
-            }
-            if(ball[1] <= p2pos[1]+(PLAYERLENGTH/5)*1 && ball[1] >= p2pos[1]+(PLAYERLENGTH/5)*0) {
-//                ballMotionPolar[1] += -60;
-                qDebug() << "player2 buttom";
-                ballMotionPolar[1] += 60;
-            }
-            qDebug() << "@player2:" << ballMotionPolar[1];
-        }
-    }
-
-    // check ballMotionPolar[1] value. it does not get highter than 90 or lower than -90, actually just 85 and -85 otherwise we would have no X movement ...
-    if(ballMotionPolar[1] < -85)
-        ballMotionPolar[1] = -85;
-    else if(ballMotionPolar[1] > 85)
-        ballMotionPolar[1] = 85;
-
-    // calculate from polor coordinates to cartesian points, to get the new ball location
-    ball[0] += cos(ballMotionPolar[1]*M_PI/180) * ballMotionPolar[0] * ballXMoveDirection;
-    ball[1] += sin(ballMotionPolar[1]*M_PI/180) * ballMotionPolar[0];// * ballYMoveDirection;
-
-    return 1;   // calculation done
+    ball->setSpeed(speed);
 }
 
-void glCoreWidget::resetBallMotion()
+void glCoreWidget::ballMoveThroughWalls(bool state)
 {
-    ballMotionPolar[0] = BALLSPEED;
-    ballMotionPolar[1] = 0;
+    ball->setMoveThroughWall(state);
 }

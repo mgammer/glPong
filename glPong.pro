@@ -12,9 +12,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         widget.cpp \
-    glcorewidget.cpp
+    glcorewidget.cpp \
+    paddle.cpp \
+    pongBall.cpp
 
 HEADERS  += widget.h \
-    glcorewidget.h
+    glcorewidget.h \
+    paddle.h \
+    pongBall.h
 
 FORMS    += widget.ui
