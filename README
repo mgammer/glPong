@@ -1,9 +1,11 @@
 A OpenGL clone of the popular Pong game.
 Created with Qt4 and OpenGL.
 
+Phonon and gstreamer are required to hear sounds.
+
 Build Instructions (Unix/Shell):
 - cd /into/project/directory/
-- qmake
+- qmake glPong.pro
 - make
 - ./glPong
 
@@ -16,7 +18,4 @@ Game Keys:
 - ESC = Quit game
 
 Future Plans:
-- Classes for player and ball
-- Slider to change ball speed ingame
 - Server/Client architecture to play via internet
-- Hit sounds

@@ -3,7 +3,9 @@
 
 #include <qgl.h>
 #include <math.h>
-#include <QDebug>
+#include <phonon/MediaObject>
+#include <phonon/AudioOutput>
+#include <QApplication>
 
 #define BALLRADIUS 2
 
@@ -11,6 +13,8 @@ class pongBall
 {
 public:
     pongBall(GLfloat x, GLfloat y, GLfloat z, int speed, int angle);
+    ~pongBall();
+
     void draw();
 
     int collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat height);
@@ -35,6 +39,10 @@ private:
     float m_color[3];               // ball RGB Color values
 
     bool m_collideAgainstWall;      // ignore walls?
+
+   Phonon::MediaObject *m_mediaObject;  // mediaObject which plays given sound files sounds NOTE: due to a Qt bug, mediaObject can not play soundfiles from Qt resource-files .qrc
+   Phonon::AudioOutput *m_audioOutput;  // audioOutput outputs audio from mediaObject to soundcard
+   Phonon::Path path;                   // creates connection between mediaObject and audioOutput
 };
 
 #endif // PONGBALL_H

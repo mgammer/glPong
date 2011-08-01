@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl
+QT       += core gui opengl phonon
 
 TARGET = glPong
 TEMPLATE = app
@@ -22,3 +22,6 @@ HEADERS  += widget.h \
     pongBall.h
 
 FORMS    += widget.ui
+
+RESOURCES += \
+    glPongSounds.qrc

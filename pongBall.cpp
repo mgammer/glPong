@@ -2,7 +2,7 @@
 
 pongBall::pongBall(GLfloat x, GLfloat y, GLfloat z, int speed, int angle)
 {
-
+    // setup ball environment
     this->m_position[0] = x;
     this->m_position[1] = y;
     this->m_position[2] = z;
@@ -15,6 +15,17 @@ pongBall::pongBall(GLfloat x, GLfloat y, GLfloat z, int speed, int angle)
     this->m_ballMotionPolar[1] = angle;
 
     this->m_collideAgainstWall = true;  // default: we can hit walls :)
+
+    // setup sound
+    this->m_mediaObject = new Phonon::MediaObject();
+    this->m_audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory);
+    path = Phonon::createPath(this->m_mediaObject, this->m_audioOutput);
+}
+
+pongBall::~pongBall()
+{
+    delete this->m_mediaObject;
+    delete this->m_audioOutput;
 }
 
 void pongBall::draw()
@@ -103,7 +114,6 @@ int pongBall::collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat heigh
 
             // player paddle split into 5 sections: from player paddle top to bottum
             if(this->m_position[1] >= y+(height/5)*4) {
-                qDebug() << "paddle hit on top" << m_ballMotionPolar[1];
                 if(abs(m_ballMotionPolar[1]) == 0)
                     m_ballMotionPolar[1] -= 10;
                 else if(abs(m_ballMotionPolar[1]) == 180)
@@ -118,7 +128,6 @@ int pongBall::collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat heigh
 
             }
             else if(this->m_position[1] <= y+(height/5)*4 && this->m_position[1] >= y+(height/5)*3) {
-                qDebug() << "paddle hit middle-top" << m_ballMotionPolar[1];
                 if(abs(m_ballMotionPolar[1]) == 0)
                     m_ballMotionPolar[1] -= 5;
                 else if(abs(m_ballMotionPolar[1]) == 180)
@@ -135,12 +144,10 @@ int pongBall::collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat heigh
 
             }
             else if(this->m_position[1] <= y+(height/5)*3 && this->m_position[1] >= y+(height/5)*2) {
-                qDebug() << "paddle hit middle" << m_ballMotionPolar[1];
                 // hitting paddel middle does change the direction
                 m_ballMotionPolar[1] *=-1;
             }
             else if(this->m_position[1] <= y+(height/5)*2 && this->m_position[1] >= y+(height/5)*1) {
-                qDebug() << "paddle hit middle-bottom" << m_ballMotionPolar[1];
                 if(abs(m_ballMotionPolar[1]) == 0)
                     m_ballMotionPolar[1] += 5;
                 else if(abs(m_ballMotionPolar[1]) == 180)
@@ -156,7 +163,6 @@ int pongBall::collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat heigh
                     m_ballMotionPolar[1] = (m_ballMotionPolar[1]-5)*-1;
             }
             else if(this->m_position[1] <= y+(height/5)*1) {
-                qDebug() << "paddle hit on bottom" << m_ballMotionPolar[1];
                 if(abs(m_ballMotionPolar[1]) == 0)
                     m_ballMotionPolar[1] += 10;
                 else if(abs(m_ballMotionPolar[1]) == 180)
@@ -171,28 +177,19 @@ int pongBall::collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat heigh
             }
 
             /* make sure angle does not get 90 or 270 degree, same for negative angles */
-            if(m_ballMotionPolar[1] == 90) {
+            if(m_ballMotionPolar[1] == 90 || m_ballMotionPolar[1] == -270) {
                 m_ballMotionPolar[1] +=15;
-                qDebug() << "angle == 90 => new angle:" << m_ballMotionPolar[1];
             }
-            else if(m_ballMotionPolar[1] == -90) {
-                m_ballMotionPolar[1] -= 15;
-                qDebug() << "angle == -90 => new angle:" << m_ballMotionPolar[1];
-            }
-            else if(m_ballMotionPolar[1] == 270) {
+            else if(m_ballMotionPolar[1] == 270 || m_ballMotionPolar[1] == -90) {
                 m_ballMotionPolar[1] += 15;
-                qDebug() << "angle == 270 => new angle:" << m_ballMotionPolar[1];
             }
-            else if(m_ballMotionPolar[1] == -270) {
-                m_ballMotionPolar[1] += 15;
-                qDebug() << "angle == -270 => new angle:" << m_ballMotionPolar[1];
-            }
-
 
             /* finally, we hit a paddle, make a 180° turn */
             this->m_ballMotionPolar[1] = (180+this->m_ballMotionPolar[1]) % 360;
 
-            qDebug() << "@player:" << m_ballMotionPolar[1];
+            // play a hit sound
+            this->m_mediaObject->setCurrentSource(Phonon::MediaSource(":/sounds/player.wav"));
+            this->m_mediaObject->play();
 
             return 1;   // hit!
         }
@@ -203,19 +200,16 @@ int pongBall::collusionPaddle(GLfloat x, GLfloat y, GLfloat width, GLfloat heigh
 
 int pongBall::collusionWall(GLfloat whereY)
 {
-    if(this->m_position[1]+BALLRADIUS >= whereY) {
-        if(this->m_collideAgainstWall)
+    if(this->m_position[1]+BALLRADIUS >= whereY || this->m_position[1]-BALLRADIUS <= -whereY) {
+        if(this->m_collideAgainstWall) {
             this->m_ballMotionPolar[1] *= -1;   // make a turn
+
+            // play a hit sound
+            this->m_mediaObject->setCurrentSource(Phonon::MediaSource(":/sounds/wall.wav"));
+            this->m_mediaObject->play();
+        }
         else
             this->m_position[1] *= -1;          // change screen position - we moved from top to bottom through the wall :)
-
-        return 1;
-    }
-    else if(this->m_position[1]-BALLRADIUS <= -whereY) {
-        if(this->m_collideAgainstWall)
-            this->m_ballMotionPolar[1] *= -1;   // make a turn;
-        else
-            this->m_position[1] *= -1;          // change screen position - we moved from bottom to top through the wall :)
 
         return 1;
     }
@@ -226,9 +220,17 @@ int pongBall::collusionWall(GLfloat whereY)
 int pongBall::goal(GLfloat goalposition)
 {
     if(this->m_position[0] >= goalposition) {
+        // play a goal sound
+        this->m_mediaObject->setCurrentSource(Phonon::MediaSource(":/sounds/goal.wav"));
+        this->m_mediaObject->play();
+
         return 1;   // player 1 scored
     }
     else if(this->m_position[0] <= -goalposition) {
+        // play a goal sound
+        this->m_mediaObject->setCurrentSource(Phonon::MediaSource(":/sounds/goal.wav"));
+        this->m_mediaObject->play();
+
         return 2;   // player 2 scored
     }
     return 0;       // no goal

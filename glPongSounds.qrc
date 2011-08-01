@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>sounds/goal.wav</file>
+        <file>sounds/player.wav</file>
+        <file>sounds/wall.wav</file>
+    </qresource>
+</RCC>
