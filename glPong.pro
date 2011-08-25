@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl phonon
+QT       += core gui opengl phonon network
 
 TARGET = glPong
 TEMPLATE = app
@@ -14,12 +14,14 @@ SOURCES += main.cpp\
         widget.cpp \
     glcorewidget.cpp \
     paddle.cpp \
-    pongBall.cpp
+    pongBall.cpp \
+    network.cpp
 
 HEADERS  += widget.h \
     glcorewidget.h \
     paddle.h \
-    pongBall.h
+    pongBall.h \
+    network.h
 
 FORMS    += widget.ui
 

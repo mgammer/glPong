@@ -10,9 +10,14 @@
 #define BALLSPEED 5                     // ballspeed per frame => ~30FPS *BALLSPEED = MOVEMENT PER SECOND
 
 
-glCoreWidget::glCoreWidget(QWidget *parent) :
+glCoreWidget::glCoreWidget(QString ipAddr, QWidget *parent) :
     QGLWidget(parent)
 {
+    networkRole = 0;    // singleplayer game
+    net = new network(ipAddr);
+    connect(net, SIGNAL(connected(int)), this, SLOT(newNetworkGame(int)));
+    connect(net, SIGNAL(received(int)), this, SLOT(networkIncomming(int)));
+
     player1 = new paddle(-FIELDLENGTH+PLAYERWIDTH*2, 0, 0, PLAYERWIDTH, PLAYERLENGTH, PLAYERSTEP);
     player1->setColor(0.0, 0.5, 1.0);
     player2 = new paddle(FIELDLENGTH-(PLAYERWIDTH*3), 0, 0, PLAYERWIDTH, PLAYERLENGTH, PLAYERSTEP);
@@ -37,6 +42,8 @@ glCoreWidget::~glCoreWidget()
         delete ball;
     if(timer)
         delete timer;
+    if(net)
+        delete net;
 }
 
 void glCoreWidget::initializeGL()
@@ -54,7 +61,7 @@ void glCoreWidget::initializeGL()
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     qglClearColor(Qt::black);
-    //glFrustum(-10, 10, -10 , 10, -10, -100);
+//    glFrustum(-10, 10, -10 , 10, -10, -100);
 
 }
 
@@ -134,40 +141,116 @@ void glCoreWidget::collusionDetection()
 
 void glCoreWidget::keyPressEvent(QKeyEvent *e)
 {
-    switch(e->key()) {
-    case Qt::Key_Up:
-        player2->moveUp();
-        break;
-    case Qt::Key_Down:
-        player2->moveDown();
-        break;
-    case Qt::Key_Space:
-        emit toggleGame();
-        break;
-    case Qt::Key_Enter:
-        ballMoving = true;
-        break;
-    case Qt::Key_Return:
-        ballMoving = true;
-        break;
-    case Qt::Key_A:
-        player1->moveUp();
-        break;
-    case Qt::Key_Y:
-        player1->moveDown();
-        break;
-    case Qt::Key_R:
-        resetGame();
-        break;
-    case Qt::Key_Escape:
-        QApplication::instance()->quit();
-        break;
-    case Qt::Key_F:
-        emit toggleFullscreen();
-        break;
-    default:
-        qDebug() << "unhandled key pressed:" << e->key();
-        break;
+    if(networkRole == 0) {
+        switch(e->key()) {
+        case Qt::Key_Up:
+            player2->moveUp();
+            break;
+        case Qt::Key_Down:
+            player2->moveDown();
+            break;
+        case Qt::Key_Space:
+            emit toggleGame();
+            break;
+        case Qt::Key_Enter:
+            ballMoving = true;
+            break;
+        case Qt::Key_Return:
+            ballMoving = true;
+            break;
+        case Qt::Key_A:
+            player1->moveUp();
+            break;
+        case Qt::Key_Y:
+            player1->moveDown();
+            break;
+        case Qt::Key_R:
+            resetGame();
+            break;
+        case Qt::Key_Escape:
+            QApplication::instance()->quit();
+            break;
+        case Qt::Key_F:
+            emit toggleFullscreen();
+            break;
+        default:
+//            qDebug() << "unhandled key pressed:" << e->key();
+            break;
+        }
+    }
+    else if(networkRole == 1) {
+        switch(e->key()) {
+        case Qt::Key_Space:
+            net->sendValue(Qt::Key_Space);
+            emit toggleGame();
+            break;
+        case Qt::Key_Enter:
+            net->sendValue(Qt::Key_Enter);
+            ballMoving = true;
+            break;
+        case Qt::Key_Return:
+            net->sendValue(Qt::Key_Return);
+            ballMoving = true;
+            break;
+        case Qt::Key_A:
+            player1->moveUp();
+            net->sendValue(player1->getY());
+            break;
+        case Qt::Key_Y:
+            player1->moveDown();
+            net->sendValue(player1->getY());
+            break;
+        case Qt::Key_R:
+            net->sendValue(Qt::Key_R);
+            resetGame();
+            break;
+        case Qt::Key_Escape:
+            QApplication::instance()->quit();
+            break;
+        case Qt::Key_F:
+            emit toggleFullscreen();
+            break;
+        default:
+//            qDebug() << "unhandled key pressed:" << e->key();
+            break;
+        }
+    }
+    else if(networkRole == 2) {
+        switch(e->key()) {
+        case Qt::Key_Up:
+            player2->moveUp();
+            net->sendValue(player2->getY());
+            break;
+        case Qt::Key_Down:
+            player2->moveDown();
+            net->sendValue(player2->getY());
+            break;
+        case Qt::Key_Space:
+            emit toggleGame();
+            net->sendValue(Qt::Key_Space);
+            break;
+        case Qt::Key_Enter:
+            ballMoving = true;
+            net->sendValue(Qt::Key_Enter);
+            break;
+        case Qt::Key_Return:
+            ballMoving = true;
+            net->sendValue(Qt::Key_Return);
+            break;
+        case Qt::Key_R:
+            resetGame();
+            net->sendValue(Qt::Key_R);
+            break;
+        case Qt::Key_Escape:
+            QApplication::instance()->quit();
+            break;
+        case Qt::Key_F:
+            emit toggleFullscreen();
+            break;
+        default:
+//            qDebug() << "unhandled key pressed:" << e->key();
+            break;
+        }
     }
 
     // if game is on pause, updateGL
@@ -196,4 +279,44 @@ void glCoreWidget::ballSpeed(int speed)
 void glCoreWidget::ballMoveThroughWalls(bool state)
 {
     ball->setMoveThroughWall(state);
+}
+
+void glCoreWidget::newNetworkGame(int role)
+{
+    networkRole = role;
+
+    if(role == 0) {
+        emit networkGame(false);
+        resetGame();
+    }
+    else {
+        emit networkGame(true);
+        resetGame();
+    }
+}
+
+void glCoreWidget::networkIncomming(int value)
+{
+    switch(value) {
+    case Qt::Key_Enter:
+        ballMoving = true;
+        break;
+    case Qt::Key_Return:
+        ballMoving = true;
+        break;
+    case Qt::Key_Space:
+        emit toggleGame();
+        break;
+    case Qt::Key_R:
+        resetGame();
+        break;
+    default:
+        if(networkRole == 1)    // update player 2 position
+            player2->setPosition(FIELDLENGTH-(PLAYERWIDTH*3), value, 0);
+        else                    // update player 1 position
+            player1->setPosition(-FIELDLENGTH+PLAYERWIDTH*2, value, 0);
+        break;
+    }
+
+    updateGL();
 }

@@ -2,13 +2,13 @@
 #include "ui_widget.h"
 #include <QResizeEvent>
 
-Widget::Widget(QWidget *parent) :
+Widget::Widget(QString ipAddr, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
 
-    glWidget = new glCoreWidget(this);
+    glWidget = new glCoreWidget(ipAddr, this);
     glWidget->setGeometry(0, 35, 400, 200);
 
     connect(this, SIGNAL(gameStart(bool)), glWidget, SLOT(startGame(bool)));
@@ -19,6 +19,7 @@ Widget::Widget(QWidget *parent) :
     connect(glWidget, SIGNAL(resetLCD()), this, SLOT(resetLCD()));
     connect(glWidget, SIGNAL(toggleFullscreen()), this, SLOT(toggleFullscreen()));
     connect(glWidget, SIGNAL(toggleGame()), this, SLOT(buttonPressed()));
+    connect(glWidget, SIGNAL(networkGame(bool)), this, SLOT(toggleNetworkGame(bool)));
 
     connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(buttonPressed()));
 
@@ -98,4 +99,16 @@ void Widget::checkBoxValueChanged(bool state)
     emit checkBoxValue(state);
 
     glWidget->setFocus();       // set focus to glWidget otherwise we dont get keyEvents on glWidget
+}
+
+void Widget::toggleNetworkGame(bool state)
+{
+        ui->checkBox->setVisible(!state);
+        ui->horizontalSlider->setVisible(!state);
+
+        if(state && ui->pushButton->text().toLower() == QString("Pause").toLower()) {
+            ui->pushButton->setText("Start");
+            emit gameStart(false);
+        }
+
 }

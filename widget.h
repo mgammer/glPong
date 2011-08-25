@@ -14,7 +14,7 @@ class Widget : public QWidget
     Q_OBJECT
 
 public:
-    explicit Widget(QWidget *parent = 0);
+    explicit Widget(QString ipAddr = "", QWidget *parent = 0);
     ~Widget();
 
 signals:
@@ -31,6 +31,7 @@ private slots:
     void toggleFullscreen();
     void sliderValueChanged(int value);
     void checkBoxValueChanged(bool state);
+    void toggleNetworkGame(bool state);
 
 protected:
     void resizeEvent(QResizeEvent *e);

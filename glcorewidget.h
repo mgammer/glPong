@@ -9,13 +9,14 @@
 
 #include "paddle.h"
 #include "pongBall.h"
+#include "network.h"
 
 class glCoreWidget : public QGLWidget
 {
     Q_OBJECT
 
 public:
-    explicit glCoreWidget(QWidget *parent = 0);
+    explicit glCoreWidget(QString ipAddr = "", QWidget *parent = 0);
     ~glCoreWidget();
 
 signals:
@@ -23,6 +24,7 @@ signals:
     void toggleGame();
     void resetLCD();
     void toggleFullscreen();
+    void networkGame(bool state);
 
 public slots:
     void startGame(bool state);
@@ -32,6 +34,8 @@ public slots:
 
 private slots:
     void newFrame();
+    void newNetworkGame(int role);
+    void networkIncomming(int value);
 
 protected:
     void initializeGL();
@@ -52,6 +56,9 @@ private:
     bool ballMoving;        // ball needs to be "shot" from a player in order to move at the beginning of a game and after each goal
 
     void collusionDetection();  // calls and handles all colusion functions and events
+
+    int networkRole;        // 0 = singleplayer game, 1 = player 1 network game, 2 = player 2 network game
+    network *net;           // network transfer
 };
 
 #endif // GLCOREWIDGET_H

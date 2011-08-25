@@ -2,20 +2,22 @@ A OpenGL clone of the popular Pong game.
 Created with Qt4 and OpenGL.
 
 Phonon and gstreamer are required to hear sounds.
+Port 1337 is used to play network games.
 
 Build Instructions (Unix/Shell):
 - cd /into/project/directory/
 - qmake glPong.pro
 - make
-- ./glPong
+- ./glPong <IPAddress>
 
 Game Keys:
 - Space = Pause/Start the game
-- Enter = Start ball movement
+- Enter/Return = Start ball movement
 - A/Y = Move player 1 up/down
 - Cursor Up/Down = move player 2 up/down
 - F = Toggle between fullscreen and normal mode
 - ESC = Quit game
 
 Future Plans:
-- Server/Client architecture to play via internet
+- improve network playing
+- Bugfixing
